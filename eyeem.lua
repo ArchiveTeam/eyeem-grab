@@ -420,10 +420,10 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
 
   if allowed(url)
     and status_code < 300
-    and item_type ~= "asset" then
+    and not string.match(url, "^https?://cdn%.eyeem%.com/") then
     html = read_file(file)
     if item_type == "p" then
-      check("https://www.eyeem.com/graphql?operationName=getLicensingInfo&variables=%7B%22assetId%22%3A%22" .. item_value .. "%22%2C%22assetType%22%3A%22photos%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%226f083218032666a8322d30b4b3c6f406d379d52b8769f1a8536a868b6b8fe718%22%7D%7D")
+      --check("https://www.eyeem.com/graphql?operationName=getLicensingInfo&variables=%7B%22assetId%22%3A%22" .. item_value .. "%22%2C%22assetType%22%3A%22photos%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%226f083218032666a8322d30b4b3c6f406d379d52b8769f1a8536a868b6b8fe718%22%7D%7D")
       if string.match(url, "/p/[0-9]+$") then
         local s = cjson.decode(string.match(html, "window%.__APOLLO_STATE__%s*=%s*({.-});"))
         local p = s["Photo:" .. item_value]
