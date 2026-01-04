@@ -2,6 +2,7 @@
 import datetime
 from distutils.version import StrictVersion
 import hashlib
+import ipaddress
 import os
 import random
 from seesaw.config import realize, NumberConfigValue
@@ -77,7 +78,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20260104.01'
+VERSION = '20260104.02'
 USER_AGENT = 'Mozilla/5.0 (X11; Linux i686; rv:145.0) Gecko/20100101 Firefox/145.0'
 TRACKER_ID = 'eyeem'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -251,6 +252,28 @@ class ZstdDict(object):
 
 
 class WgetArgs(object):
+    FORBIDDEN_IPS = None
+
+    @classmethod
+    def get_random_ip(cls):
+        if cls.FORBIDDEN_IPS is None:
+            forbidden = []
+            with open('fullbogons-ipv4.txt', 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('#') or len(line) == 0:
+                        continue
+                    forbidden.append(ipaddress.IPv4Network(line))
+            assert len(forbidden) > 0
+            cls.FORBIDDEN_IPS = list(ipaddress.collapse_addresses(forbidden))
+        while True:
+            ip = ipaddress.IPv4Address(random.getrandbits(32))
+            for n in cls.FORBIDDEN_IPS:
+                if ip in n:
+                    break
+            else:
+                return format(ip)
+
     def realize(self, item):
         wget_args = [
             WGET_AT,
@@ -304,11 +327,17 @@ class WgetArgs(object):
                 concurrency = 2
         item['concurrency'] = str(concurrency)
 
+        banned_checked = False
+
         for item_name in item['item_name'].split('\0'):
             wget_args.extend(['--warc-header', 'x-wget-at-project-item-name: '+item_name])
             wget_args.append('item-name://'+item_name)
             item_type, item_value = item_name.split(':', 1)
             if item_type == 'p':
+                if not banned_checked:
+                    if requests.get('https://www.eyeem.com/p/450090', timeout=10).status_code in (403, 429):
+                        wget_args.extend(['--header', 'X-Forwarded-For: '+self.get_random_ip()])
+                    banned_checked = True
                 wget_args.extend(['--warc-header', 'eyeem-photo: '+item_value])
                 wget_args.append('https://www.eyeem.com/p/'+item_value)
             #elif item_type == 'u':

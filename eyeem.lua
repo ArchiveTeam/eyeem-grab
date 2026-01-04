@@ -400,18 +400,18 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   local base = string.match(url, "^(https?://[^/]+/[^/]+/[^/]+/)")
   if string.match(url, "^https?://cdn%.eyeem%.com/thumb/[0-9a-f]+/") then
     for _, size in pairs({
-      "640/480",
+      --"640/480",
       "1280/1280",
-      "12800/12800"
+      --"12800/12800"
     }) do
       check(base .. size)
     end
-  elseif string.match(url, "^https?://cdn%.eyeem%.com/thumb/[0-9a-f]+%-[0-9]+/") then
+  elseif string.match(url, "^https?://cdn%.eyeem%.com/thumb/[0-9a-f]+[%-%.][0-9a-zA-Z]+/") then
     for _, size in pairs({
       "w/12800",
       "w/1280",
-      "h/100",
-      "640/480",
+      --"h/100",
+      --"640/480",
       "1280/1280"
     }) do
       check(base .. size)
@@ -422,6 +422,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     and status_code < 300
     and not string.match(url, "^https?://cdn%.eyeem%.com/") then
     html = read_file(file)
+    local downloaded_temp = {}
     if item_type == "p" then
       --check("https://www.eyeem.com/graphql?operationName=getLicensingInfo&variables=%7B%22assetId%22%3A%22" .. item_value .. "%22%2C%22assetType%22%3A%22photos%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%226f083218032666a8322d30b4b3c6f406d379d52b8769f1a8536a868b6b8fe718%22%7D%7D")
       if string.match(url, "/p/[0-9]+$") then
@@ -433,7 +434,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         if p["__typename"] ~= "Photo" then
           error("Expected type photo, got " .. p["__typename"])
         end
-        local thumb_url_id = string.match(p["thumbUrl"], "^https?://cdn%.eyeem%.com/thumb/([0-9a-f]+)%-[0-9]+/")
+        local thumb_url_id = string.match(p["thumbUrl"], "^https?://cdn%.eyeem%.com/thumb/([0-9a-f]+)[%-%.][0-9a-zA-Z]+/")
         if not thumb_url_id then
           error("Unexpected thumb URL structure " .. p["thumbUrl"] .. ".")
         end
@@ -443,7 +444,12 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         end
         ids[string.lower(thumb_url_id)] = true
         ids[string.lower(photo_url_public_id)] = true
-        queue_sizes(string.match(p["thumbUrl"], "^(https?://[^/]+/thumb/[^/]+/)") .. "w/", p["width"], p["height"])
+        check(string.gsub(p["photoUrlPublic"], "/[0-9]+/[0-9]+$", "/1280/1280"))
+        for _, newurl in pairs({p["thumbUrl"], p["photoUrlPublic"]}) do
+          downloaded_temp[newurl] = downloaded[newurl] or false
+          downloaded[newurl] = true
+        end
+        --queue_sizes(string.match(p["thumbUrl"], "^(https?://[^/]+/thumb/[^/]+/)") .. "w/", p["width"], p["height"])
       end
     end
     for newurl in string.gmatch(string.gsub(html, "&[qQ][uU][oO][tT];", '"'), '([^"]+)') do
@@ -465,6 +471,9 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     html = string.gsub(html, "&lt;", "<")
     for newurl in string.gmatch(html, ">%s*([^<%s]+)") do
       checknewurl(newurl)
+    end
+    for newurl, v in pairs(downloaded_temp) do
+      downloaded[newurl] = v
     end
   end
 
@@ -531,6 +540,9 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     io.stdout:flush()
     tries = tries + 1
     local maxtries = 6
+    if status_code == 403 or status_code == 429 then
+      tries = maxtries + 1
+    end
     if tries > maxtries then
       io.stdout:write(" Skipping.\n")
       io.stdout:flush()
