@@ -78,7 +78,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20260104.05'
+VERSION = '20260104.06'
 USER_AGENT = 'Mozilla/5.0 (X11; Linux i686; rv:145.0) Gecko/20100101 Firefox/145.0'
 TRACKER_ID = 'eyeem'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -337,6 +337,21 @@ class WgetArgs(object):
                 if not banned_checked:
                     if requests.get('https://www.eyeem.com/p/'+item_value, timeout=10).status_code in (403, 429):
                         wget_args.extend(['--header', 'X-Forwarded-For: '+self.get_random_ip()])
+                    #headers = {}
+                    #for _ in range(30):
+                    #    if requests.get(
+                    #        'https://www.eyeem.com/p/'+item_value,
+                    #        timeout=10,
+                    #        headers=headers
+                    #    ).status_code in (403, 429):
+                    #        headers['X-Forwarded-For'] = self.get_random_ip()
+                    #    else:
+                    #        break
+                    #else:
+                    #    Exception('Could not find workaround.')
+                    #for k, v in headers.items():
+                    #    print('Using', k, v)
+                    #    wget_args.extend(['--header', '{}: {}'.format(k, v)])
                     banned_checked = True
                 wget_args.extend(['--warc-header', 'eyeem-photo: '+item_value])
                 wget_args.append('https://www.eyeem.com/p/'+item_value)
