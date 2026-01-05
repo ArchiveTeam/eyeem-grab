@@ -389,7 +389,7 @@ project = Project(
     title=TRACKER_ID,
     project_html='''
         <img class="project-logo" alt="Project logo" src="https://wiki.archiveteam.org/images/8/8f/Eyeem-icon.png" height="50px" title=""/>
-        <h2>EyeEm <span class="links"><a href="https://eyem.com/">Website</a> &middot; <a href="http://tracker.archiveteam.org/eyeem/">Leaderboard</a> &middot; <a href="https://wiki.archiveteam.org/index.php/EyeEm">Wiki</a></span></h2>
+        <h2>EyeEm <span class="links"><a href="https://eyeem.com/">Website</a> &middot; <a href="http://tracker.archiveteam.org/eyeem/">Leaderboard</a> &middot; <a href="https://wiki.archiveteam.org/index.php/EyeEm">Wiki</a></span></h2>
         <p>Archiving EyeEm.</p>
     '''
 )
